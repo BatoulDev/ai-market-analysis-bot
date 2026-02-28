@@ -1,0 +1,1218 @@
+{
+  "name": "AI Market Analysis Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "e609b878-977d-4226-85b9-0b48ab317d26",
+      "name": "Telegram Trigger",
+      "webhookId": "35ba4a04-36b4-4ee4-98eb-d29fd6a30c11",
+      "credentials": {
+        "telegramApi": {
+          "id": "hzUucFWrHcaeKjJ0",
+          "name": "market analysis bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/time_series?symbol={{ $json.symbol }}&interval=15min&outputsize=400&apikey=f6be62398937457e853d180a3dfa6e47",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        -304
+      ],
+      "id": "82360a99-036d-4462-a510-cc793a0c19d2",
+      "name": "Get Candles 15m",
+      "notes": "We built a dynamic API request that takes the symbol generated in n8n (like XAU/USD), inserts it into the TwelveData endpoint, and fetches 15-minute market price data using your API key."
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/time_series?symbol={{ $json.symbol }}&interval=5min&outputsize=500&apikey=f6be62398937457e853d180a3dfa6e47",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        -96
+      ],
+      "id": "f3f89550-cc6f-4997-a43c-23ad1af7d839",
+      "name": "Get Candles 5m",
+      "notes": "We built a dynamic API request that takes the symbol generated in n8n (like XAU/USD), inserts it into the TwelveData endpoint, and fetches 15-minute market price data using your API key."
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/time_series?symbol={{ $json.symbol }}&interval=1h&outputsize=300&apikey=f6be62398937457e853d180a3dfa6e47",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        384,
+        128
+      ],
+      "id": "73f2553e-9785-428e-9066-53fe24d9039c",
+      "name": "Get Candles 1h",
+      "notes": "We built a dynamic API request that takes the symbol generated in n8n (like XAU/USD), inserts it into the TwelveData endpoint, and fetches 15-minute market price data using your API key."
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/time_series?symbol={{ $json.symbol }}&interval=4h&outputsize=200&apikey=f6be62398937457e853d180a3dfa6e47",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        400,
+        352
+      ],
+      "id": "5ae00f9f-1210-452c-9446-aa253a0051df",
+      "name": "Get Candles 4h",
+      "notes": "We built a dynamic API request that takes the symbol generated in n8n (like XAU/USD), inserts it into the TwelveData endpoint, and fetches 15-minute market price data using your API key."
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/time_series?symbol={{ $json.symbol }}&interval=1day&outputsize=150&apikey=f6be62398937457e853d180a3dfa6e47",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        400,
+        560
+      ],
+      "id": "d7c49c46-e087-4215-8cce-b385570ab40d",
+      "name": "Get Candles 1D",
+      "notes": "We built a dynamic API request that takes the symbol generated in n8n (like XAU/USD), inserts it into the TwelveData endpoint, and fetches 15-minute market price data using your API key."
+    },
+    {
+      "parameters": {
+        "url": "=https://api.twelvedata.com/time_series?symbol={{ $json.symbol }}&interval=1week&outputsize=100&apikey=f6be62398937457e853d180a3dfa6e47",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        400,
+        752
+      ],
+      "id": "5cacfbc5-1da1-4d88-8946-ac64047ebf35",
+      "name": "Get Candles 1Week",
+      "notes": "We built a dynamic API request that takes the symbol generated in n8n (like XAU/USD), inserts it into the TwelveData endpoint, and fetches 15-minute market price data using your API key."
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "values",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -96
+      ],
+      "id": "9123d59c-94b6-408c-99c8-6fad7309898c",
+      "name": "5m – Split Candles"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Make a copy before sorting\nconst sortedItems = [...items].sort(function(a, b) {\n  const dateA = a.json.datetime ? new Date(a.json.datetime) : new Date(0);\n  const dateB = b.json.datetime ? new Date(b.json.datetime) : new Date(0);\n  return dateA.getTime() - dateB.getTime();\n});\n\n// Take last 5 candles\nconst mostRecent = sortedItems.slice(-200);\n\n// Format output (without volume)\nconst formattedKlines = mostRecent.map(item => {\n  const candle = item.json;\n\n  return {\n    timestamp: candle.datetime || null,\n    open: candle.open ? parseFloat(candle.open) : 0,\n    high: candle.high ? parseFloat(candle.high) : 0,\n    low: candle.low ? parseFloat(candle.low) : 0,\n    close: candle.close ? parseFloat(candle.close) : 0\n  };\n});\n\nreturn [\n  {\n    json: {\n      recentKlines: formattedKlines\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -96
+      ],
+      "id": "b709b9f3-fb99-4522-a0f3-c9c20ebfa839",
+      "name": "5m – Prepare Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Make a copy before sorting\nconst sortedItems = [...items].sort(function(a, b) {\n  const dateA = a.json.datetime ? new Date(a.json.datetime) : new Date(0);\n  const dateB = b.json.datetime ? new Date(b.json.datetime) : new Date(0);\n  return dateA.getTime() - dateB.getTime();\n});\n\n// Take last 5 candles\nconst mostRecent = sortedItems.slice(-120);\n\n// Format output (without volume)\nconst formattedKlines = mostRecent.map(item => {\n  const candle = item.json;\n\n  return {\n    timestamp: candle.datetime || null,\n    open: candle.open ? parseFloat(candle.open) : 0,\n    high: candle.high ? parseFloat(candle.high) : 0,\n    low: candle.low ? parseFloat(candle.low) : 0,\n    close: candle.close ? parseFloat(candle.close) : 0\n  };\n});\n\nreturn [\n  {\n    json: {\n      recentKlines: formattedKlines\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        128
+      ],
+      "id": "2259137b-6c09-4a5a-b5e8-906bb7afa0b4",
+      "name": "1h– Prepare Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Make a copy before sorting\nconst sortedItems = [...items].sort(function(a, b) {\n  const dateA = a.json.datetime ? new Date(a.json.datetime) : new Date(0);\n  const dateB = b.json.datetime ? new Date(b.json.datetime) : new Date(0);\n  return dateA.getTime() - dateB.getTime();\n});\n\n// Take last 150 candles\nconst mostRecent = sortedItems.slice(-150);\n\n// Format output (without volume)\nconst formattedKlines = mostRecent.map(item => {\n  const candle = item.json;\n\n  return {\n    timestamp: candle.datetime || null,\n    open: candle.open ? parseFloat(candle.open) : 0,\n    high: candle.high ? parseFloat(candle.high) : 0,\n    low: candle.low ? parseFloat(candle.low) : 0,\n    close: candle.close ? parseFloat(candle.close) : 0\n  };\n});\n\nreturn [\n  {\n    json: {\n      recentKlines: formattedKlines\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -304
+      ],
+      "id": "94762b5d-4ae3-4546-9dca-5bae3d29f0cd",
+      "name": "15m – Prepare Data",
+      "notes": "This code prepares candle data for technical analysis.\n\n1. It creates a copy of all incoming candles and sorts them by datetime (oldest to newest).\n2. It selects the last 150 candles for analysis.\n3. It converts open, high, low, and close values from strings to numeric values.\n4. It returns the cleaned and formatted candle data inside \"recentKlines\".\n\nThis ensures the data is properly ordered, numerically formatted, and ready for indicator calculations such as RSI or EMA."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Make a copy before sorting\nconst sortedItems = [...items].sort(function(a, b) {\n  const dateA = a.json.datetime ? new Date(a.json.datetime) : new Date(0);\n  const dateB = b.json.datetime ? new Date(b.json.datetime) : new Date(0);\n  return dateA.getTime() - dateB.getTime();\n});\n\n// Take last 5 candles\nconst mostRecent = sortedItems.slice(-100);\n\n// Format output (without volume)\nconst formattedKlines = mostRecent.map(item => {\n  const candle = item.json;\n\n  return {\n    timestamp: candle.datetime || null,\n    open: candle.open ? parseFloat(candle.open) : 0,\n    high: candle.high ? parseFloat(candle.high) : 0,\n    low: candle.low ? parseFloat(candle.low) : 0,\n    close: candle.close ? parseFloat(candle.close) : 0\n  };\n});\n\nreturn [\n  {\n    json: {\n      recentKlines: formattedKlines\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        352
+      ],
+      "id": "38fae160-5e7b-44fb-b2d8-a45ed7cbcdf7",
+      "name": "4h – Prepare Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Make a copy before sorting\nconst sortedItems = [...items].sort(function(a, b) {\n  const dateA = a.json.datetime ? new Date(a.json.datetime) : new Date(0);\n  const dateB = b.json.datetime ? new Date(b.json.datetime) : new Date(0);\n  return dateA.getTime() - dateB.getTime();\n});\n\n// Take last 5 candles\nconst mostRecent = sortedItems.slice(-60);\n\n// Format output (without volume)\nconst formattedKlines = mostRecent.map(item => {\n  const candle = item.json;\n\n  return {\n    timestamp: candle.datetime || null,\n    open: candle.open ? parseFloat(candle.open) : 0,\n    high: candle.high ? parseFloat(candle.high) : 0,\n    low: candle.low ? parseFloat(candle.low) : 0,\n    close: candle.close ? parseFloat(candle.close) : 0\n  };\n});\n\nreturn [\n  {\n    json: {\n      recentKlines: formattedKlines\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        560
+      ],
+      "id": "5cc1b603-d554-4bdf-bf9b-761de39ff941",
+      "name": "1D – Prepare Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Make a copy before sorting\nconst sortedItems = [...items].sort(function(a, b) {\n  const dateA = a.json.datetime ? new Date(a.json.datetime) : new Date(0);\n  const dateB = b.json.datetime ? new Date(b.json.datetime) : new Date(0);\n  return dateA.getTime() - dateB.getTime();\n});\n\n// Take last 5 candles\nconst mostRecent = sortedItems.slice(-40);\n\n// Format output (without volume)\nconst formattedKlines = mostRecent.map(item => {\n  const candle = item.json;\n\n  return {\n    timestamp: candle.datetime || null,\n    open: candle.open ? parseFloat(candle.open) : 0,\n    high: candle.high ? parseFloat(candle.high) : 0,\n    low: candle.low ? parseFloat(candle.low) : 0,\n    close: candle.close ? parseFloat(candle.close) : 0\n  };\n});\n\nreturn [\n  {\n    json: {\n      recentKlines: formattedKlines\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        752
+      ],
+      "id": "172c51d5-8936-4a24-83a6-1308480ca665",
+      "name": "1W – Prepare Data"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "values",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -304
+      ],
+      "id": "422fcd0c-f0a4-461b-a511-5679f6774509",
+      "name": "15m – Split Candles"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "values",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        560,
+        128
+      ],
+      "id": "6761ed76-f18c-433c-bcfa-26f16a18c1b9",
+      "name": "1H – Split Candles"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "values",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        576,
+        352
+      ],
+      "id": "f43006c1-1517-4606-84af-a36c0b306029",
+      "name": "4H – Split Candles"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "values",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        576,
+        560
+      ],
+      "id": "73fa4b1d-23c7-49c9-8ccd-5b30567651ca",
+      "name": "1D – Split Candles"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "values",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        592,
+        752
+      ],
+      "id": "05b83334-61ca-4301-b46a-29ffb69af07c",
+      "name": "1W – Split Candles"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0f3917c2-d230-4705-9258-76cdad02742a",
+              "name": "recentKlines",
+              "value": "={{ $json.recentKlines }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        -304
+      ],
+      "id": "c99505ae-11aa-4429-9b30-137d02820479",
+      "name": "15m – Structure Engine"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0f3917c2-d230-4705-9258-76cdad02742a",
+              "name": "recentKlines",
+              "value": "={{ $json.recentKlines }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        992,
+        128
+      ],
+      "id": "e64dba1c-918b-4a1d-b128-79eb393fabb1",
+      "name": "1h – Structure Engine"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0f3917c2-d230-4705-9258-76cdad02742a",
+              "name": "recentKlines",
+              "value": "={{ $json.recentKlines }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        992,
+        352
+      ],
+      "id": "18ed1b09-8b51-4a85-a1c6-50fed4b4c5c0",
+      "name": "4h – Structure Engine"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0f3917c2-d230-4705-9258-76cdad02742a",
+              "name": "recentKlines",
+              "value": "={{ $json.recentKlines }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1008,
+        560
+      ],
+      "id": "9acad0d2-be63-42b1-b852-4dbcaedd3cf1",
+      "name": "1D – Structure Engine"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0f3917c2-d230-4705-9258-76cdad02742a",
+              "name": "recentKlines",
+              "value": "={{ $json.recentKlines }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1008,
+        752
+      ],
+      "id": "b6fc79d3-2886-4f19-994f-a8d6eeda2b91",
+      "name": "1W– Structure Engine1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0f3917c2-d230-4705-9258-76cdad02742a",
+              "name": "recentKlines",
+              "value": "={{ $json.recentKlines }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        -96
+      ],
+      "id": "8219caf9-0e3c-4f23-bd51-0e7cd988929f",
+      "name": "5m – Structure Engine"
+    },
+    {
+      "parameters": {
+        "jsCode": "const symbol = $json.symbol;\n\nlet newsQuery = \"\";\n\nif (symbol.includes(\"XAU\")) {\n  newsQuery = \"Gold OR XAUUSD OR Federal Reserve OR Inflation OR US Dollar\";\n} \nelse if (symbol.includes(\"EUR\")) {\n  newsQuery = \"Euro OR ECB OR Interest rates OR US Dollar\";\n} \nelse if (symbol.includes(\"US30\")) {\n  newsQuery = \"Dow Jones OR Federal Reserve OR US economy OR CPI\";\n} \nelse {\n  newsQuery = symbol + \" OR financial markets OR central bank\";\n}\n\nreturn [{\n  json: {\n    symbol,\n    newsQuery\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        1024
+      ],
+      "id": "8d128a53-db3c-4f03-8332-a4087a65874c",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.newsQuery }}"
+            },
+            {
+              "name": "from",
+              "value": "={{ new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split(\"T\")[0] }}"
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        640,
+        1024
+      ],
+      "id": "4a745a5a-bf86-4462-8c10-13fa27f4e6fe",
+      "name": "Dynamic News Filter Engine",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "j8Ex8YIXN2W6NY9G",
+          "name": "api key"
+        }
+      },
+      "notes": "This node sends a GET request to the NewsAPI /everything endpoint, dynamically building the URL with query parameters (q, from, sortBy, apiKey). When executed, the API receives the full URL, processes the search keywords related to the selected trading symbol, filters articles from the last 3 days, sorts them by most recent publication date, and returns structured JSON news data relevant to that market."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get articles array safely\nconst articles = $json.articles || [];\n\n// Keep only valid articles with title & description\nconst filteredArticles = articles\n  .filter(article => article.title && article.description)\n  .slice(0, 10) // take only first 10 (latest ones)\n  .map(article => ({\n    title: article.title,\n    description: article.description,\n    source: article.source?.name || null,\n    publishedAt: article.publishedAt\n  }));\n\nreturn [\n  {\n    json: {\n      symbol: $json.symbol || null,\n      totalFetched: articles.length,\n      filteredArticles\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        1024
+      ],
+      "id": "851760af-7c51-49ac-9a75-a11d90d84bcc",
+      "name": "Code in JavaScript2",
+      "notes": "1️⃣ بياخد articles من NewsAPI\n2️⃣ بيتأكد إنو موجودين\n3️⃣ بيشيل الأخبار اللي ما فيها title أو description\n4️⃣ بياخد أول 10 (لحتى ما تحللي 1000 خبر)\n5️⃣ بيرجعهم بشكل مرتب ونظيف"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=أنت محلل مشاعر ذكي ودقيق متخصص في أسواق الفوركس والذهب والمؤشرات (مثل XAUUSD و EURUSD و US30). حلل مشاعر النص المقدم باستخدام نهج من جزئين:\n\nالمشاعر قصيرة المدى:\n– قيم ردة فعل السوق الفورية، تأثير الأخبار الحديثة، والتقلبات التقنية على الزوج/الأصل المذكور.\n– حدد فئة المشاعر: \"إيجابي\"، \"محايد\"، أو \"سلبي\".\n– احسب نقاط رقمية بين -1 (سلبي جداً) و 1 (إيجابي جداً).\n– قدم مبرراً موجزاً يشرح المشاعر قصيرة المدى مع عناوين مناسبة تربط الأخبار بالأصل (مثال: الذهب يتأثر بـ الفائدة/الدولار/التضخم).\n\nالمشاعر طويلة المدى:\n– قيم نظرة السوق العامة، الأساسيات، والعوامل التنظيمية أو الاقتصادية الكلية (الفائدة، التضخم، بيانات الوظائف، تصريحات الفيدرالي/ECB...).\n– حدد فئة المشاعر: \"إيجابي\"، \"محايد\"، أو \"سلبي\".\n– احسب نقاط رقمية بين -1 (سلبي جداً) و 1 (إيجابي جداً).\n– قدم مبرراً مفصلاً يشرح المشاعر طويلة المدى مع عناوين مناسبة تربط الأحداث بالأصل.\n\nمهم جداً:\n- حلّل “أثر الخبر على الأصل” وليس فقط “إيجابية الخبر بشكل عام”.\n- إذا الأخبار غير مرتبطة مباشرة بالأصل، قل ذلك واعتبر المشاعر \"محايد\" مع درجة قريبة من 0.\n\nيجب أن يكون إخراجك بالضبط كائن JSON مع مفتاحين فقط:\n\"shortTermSentiment\" و \"longTermSentiment\".\nقيمة كل مفتاح يجب أن تكون كائن مع ثلاثة مفاتيح: \"category\"، \"score\"، و \"rationale\".\nلا تخرج أي نص إضافي.\n\nالنص لتحليله (JSON مقالات):\n{{ JSON.stringify($json.filteredArticles) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1072,
+        1024
+      ],
+      "id": "8d68f936-2b0c-4a26-ad31-6c63a4538759",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "FOyt8lmzygjunRfj",
+          "name": "OpenAi account"
+        }
+      },
+      "notes": "This prompt analyzes financial news articles and generates structured short-term and long-term market sentiment specifically tailored for Forex, gold, and indices trading decisions."
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1536,
+        16
+      ],
+      "id": "8c0ca5f6-cfd5-4d0c-b777-2d04be8681fe",
+      "name": "Merge Timeframes",
+      "notes": "The Merge node combines all timeframe structure outputs into a single unified dataset to enable multi-timeframe confluence and final trading decision logic."
+    },
+    {
+      "parameters": {
+        "jsCode": "// \"items\" هي مصفوفة من 3000 بند من عقدة الدمج\n// سنجمعها كلها في مصفوفة واحدة تسمى \"allCandles\"\nconst allCandles = [];\n\n// تكرار عبر كل بند\nfor (const item of items) {\n  allCandles.push(item.json);\n}\n\n// إرجاع بند واحد مع خاصية تسمى \"allCandles\" (مصفوفة من 3000)\nreturn [\n  {\n    json: {\n      allCandles\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        80
+      ],
+      "id": "a76a9d7d-c746-4bf8-8e29-23ebedc33023",
+      "name": "Build Unified Candle Array",
+      "notes": "After using the Merge (Append mode) node, all candles from different timeframes are collected as separate items.\n\nThe code then loops through those items and combines them into a single array called allCandles, returning one unified dataset for further multi-timeframe analysis."
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2016,
+        96
+      ],
+      "id": "4602cd84-b341-4676-8180-1303b58a53ed",
+      "name": "Merge Technical & News"
+    },
+    {
+      "parameters": {
+        "jsCode": "// متغيرات لتخزين البيانات\nconst allCandles = [];\nlet contentData = null;\n\n// التكرار عبر كل بند من عقدة الدمج\nfor (const item of items) {\n  // إذا كان البند يحتوي على بيانات الشموع، أضفها للمصفوفة\n  if (item.json.allCandles !== undefined) {\n    // افتراض أن item.json.allCandles هي مصفوفة\n    allCandles.push(...item.json.allCandles);\n  }\n\n  // إذا كان البند يحتوي على محتوى مدمج (في message.content)، احفظه\n  if (item.json.message && item.json.message.content !== undefined) {\n    contentData = item.json.message.content;\n  }\n}\n\n// إرجاع بند واحد مع بيانات الشموع والمحتوى\nreturn [{\n  json: {\n    allCandles,\n    content: contentData\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        96
+      ],
+      "id": "ef6081d3-470a-4f40-b93d-f4a4e10c4df4",
+      "name": "Final Market Context Builder",
+      "notes": "This code consolidates merged candle data and extracted news/AI content into a single unified object, enabling combined technical and fundamental analysis in the next decision stage."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=هاي البيانات المدمجة للسوق لـ {{ $('this').first().json.symbol }} للمراجعة:\n\nالبيانات التقنية:\n{{ JSON.stringify($json[\"allCandles\"]) }}\n\nتحليل المشاعر:\n{{ JSON.stringify($json[\"content\"]) }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "أنت محلل تداول يخرج بيانات JSON فقط. لا تكتب أي شيء خارج JSON.\n\nحلل البيانات التقنية (allCandles) وبيانات المشاعر (content) المقدمة لثلاث استراتيجيات مختلفة.\n\nالإخراج المطلوب: JSON object يحتوي على:\n\ntextMessage: توصيات التداول للثلاث فترات\n\nvoiceMessage: شرح الأسباب\n\nتنسيق textMessage:\nملخص توصيات اليوم – [التاريخ]\n\n📊 توصيات قصيرة المدى (1-24 ساعة):\n[إيموجي] [إجراء] @ [سعر]\n\nوقف الخسارة: [سعر]\n\nالهدف: [سعر]\n\n📊 توصيات متوسطة المدى (1-7 أيام):\n[إيموجي] [إجراء] @ [سعر]\n\nوقف الخسارة: [سعر]\n\nالهدف: [سعر]\n\n📊 توصيات طويلة المدى (1-4 أسابيع):\n[إيموجي] [إجراء] @ [سعر]\n\nوقف الخسارة: [سعر]\n\nالهدف: [سعر]\n\nاستخدم: 🟢 شراء، 🔴 بيع، 🔵 احتفاظ\n\nقواعد مهمة للتوصيات:\n\nقصير المدى: وقف خسارة ضيق (0.1-0.5%) وهدف قريب (0.2-1%)\n\nمتوسط المدى: وقف خسارة متوسط (0.5-2%) وهدف معقول (1-5%)\n\nطويل المدى: وقف خسارة واسع (2-5%) وهدف كبير (5-15%)\n\nتنسيق voiceMessage:\nاشرح سبب التوصيات الثلاثة باستخدام:\n\ncontent.shortTermSentiment.rationale للتوصية قصيرة المدى\n\ncontent.longTermSentiment.rationale للتوصيات متوسطة وطويلة المدى\n\nاذكر الفرق بين الاستراتيجيات الثلاث\nاربط المشاعر بالقرارات. لا أرقام. باللهجة اللبنانية.\n\nأخرج JSON فقط. لا نص إضافي."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2640,
+        96
+      ],
+      "id": "8ec5bd7e-bfe0-465d-85b6-1dddd606c830",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2608,
+        400
+      ],
+      "id": "b8419876-0119-44a3-a379-661047fcdf7d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "FOyt8lmzygjunRfj",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const coinInput = $input.first().json.message.text || \"\";\nconst ticker = coinInput.trim().toUpperCase();\n\nlet symbol;\n\n// إذا كتب XAU نخليه XAU/USD\nif (ticker === \"XAU\") {\n  symbol = \"XAU/USD\";\n} else {\n  symbol = ticker + \"USDT\";\n}\n\nreturn [\n  {\n    json: { symbol }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        0
+      ],
+      "id": "c08541ba-c2cd-4440-a36c-74c5df026128",
+      "name": "this",
+      "notes": "akhdt el 3emle mn luser w zdet 3lya usd so ex saret xauusd"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"text_message\": \"ملخص توصيات {{$json.today}}– 08/01/2025\\n\\n🟢 شراء BTCUSDT @ 42800\\n• وقف الخسارة: 42450\\n• الهدف: 43500\\n\\n🔵 احتفاظ BTCUSDT @ 43800\\n• وقف الخسارة: 42500\\n• الهدف: 44500\\n\\nاضرب واهرب، بس خليك منتبه للوقف! – مع تحياتي، امير\",\n  \"voice_message\": \"في توتر قصير المدى بسبب تطورات تنظيمية وآثار من أخبار عن تغييرات من جهات رسمية، بس بنفس الوقت في ثقة عم تُبنى من لاعبين كبار واهتمام مؤسسي عم يعطي دعامة للاتجاه الأكبر. السوق عم يحاول يثبت حاله بعد تقلب، وإذا شفنا تأكيد بسيط من الدعم مع استمرار حجم الشراء فبفي فرصة للارتفاع. إذا رجعت الحركة تتردد بدون دعم واضح، الأفضل تضل بالحيطة لحتى يوضح المشهد. التوصية: دخول بحذر بعد تأكيد، واذا ما صار تأكيد واضح، ناطر لليومين الجايين.\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2816,
+        400
+      ],
+      "id": "7f8f7f52-41ab-43c1-be60-9d5a0afab76b",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "={{ $json.output.text_message }}",
+        "replyMarkup": "forceReply",
+        "forceReply": {},
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3040,
+        96
+      ],
+      "id": "e809a34c-8777-4fb1-b95a-51d53e4bf4df",
+      "name": "Send a text message",
+      "webhookId": "511825a0-29ef-4125-a7f9-371d92e1330c",
+      "credentials": {
+        "telegramApi": {
+          "id": "hzUucFWrHcaeKjJ0",
+          "name": "market analysis bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "input": "={{ $json.output.voice_message }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        2992,
+        416
+      ],
+      "id": "3b9a43ea-7a4e-4beb-853a-d64ea0b53700",
+      "name": "Generate audio",
+      "credentials": {
+        "openAiApi": {
+          "id": "FOyt8lmzygjunRfj",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAudio",
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3248,
+        416
+      ],
+      "id": "6f510d05-7b82-40fd-80ee-aa7312b245f0",
+      "name": "Send an audio file",
+      "webhookId": "4becbdf2-8c8f-4f46-b790-f5173c0cccb2",
+      "credentials": {
+        "telegramApi": {
+          "id": "hzUucFWrHcaeKjJ0",
+          "name": "market analysis bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date();\n\nconst formattedDate = today.toLocaleDateString(\"en-GB\", {\n  day: \"2-digit\",\n  month: \"2-digit\",\n  year: \"numeric\"\n});\n\nreturn [{\n  json: {\n    ...$json,\n    today: formattedDate\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2416,
+        96
+      ],
+      "id": "bf3b1de3-c053-41ab-93ee-1582fbfbec5a",
+      "name": "Add Current Date"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "this",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candles 15m": {
+      "main": [
+        [
+          {
+            "node": "15m – Split Candles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candles 5m": {
+      "main": [
+        [
+          {
+            "node": "5m – Split Candles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candles 1h": {
+      "main": [
+        [
+          {
+            "node": "1H – Split Candles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candles 4h": {
+      "main": [
+        [
+          {
+            "node": "4H – Split Candles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candles 1D": {
+      "main": [
+        [
+          {
+            "node": "1D – Split Candles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Candles 1Week": {
+      "main": [
+        [
+          {
+            "node": "1W – Split Candles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5m – Split Candles": {
+      "main": [
+        [
+          {
+            "node": "5m – Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15m – Split Candles": {
+      "main": [
+        [
+          {
+            "node": "15m – Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1H – Split Candles": {
+      "main": [
+        [
+          {
+            "node": "1h– Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4H – Split Candles": {
+      "main": [
+        [
+          {
+            "node": "4h – Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1D – Split Candles": {
+      "main": [
+        [
+          {
+            "node": "1D – Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1W – Split Candles": {
+      "main": [
+        [
+          {
+            "node": "1W – Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15m – Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "15m – Structure Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5m – Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "5m – Structure Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1h– Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "1h – Structure Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4h – Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "4h – Structure Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1D – Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "1D – Structure Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1W – Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "1W– Structure Engine1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Dynamic News Filter Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dynamic News Filter Engine": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Merge Technical & News",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "15m – Structure Engine": {
+      "main": [
+        [
+          {
+            "node": "Merge Timeframes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5m – Structure Engine": {
+      "main": [
+        [
+          {
+            "node": "Merge Timeframes",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "1h – Structure Engine": {
+      "main": [
+        [
+          {
+            "node": "Merge Timeframes",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "4h – Structure Engine": {
+      "main": [
+        [
+          {
+            "node": "Merge Timeframes",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "1D – Structure Engine": {
+      "main": [
+        [
+          {
+            "node": "Merge Timeframes",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "1W– Structure Engine1": {
+      "main": [
+        [
+          {
+            "node": "Merge Timeframes",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Merge Timeframes": {
+      "main": [
+        [
+          {
+            "node": "Build Unified Candle Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Unified Candle Array": {
+      "main": [
+        [
+          {
+            "node": "Merge Technical & News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Technical & News": {
+      "main": [
+        [
+          {
+            "node": "Final Market Context Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Market Context Builder": {
+      "main": [
+        [
+          {
+            "node": "Add Current Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "this": {
+      "main": [
+        [
+          {
+            "node": "Get Candles 15m",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Candles 5m",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Candles 1h",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Candles 4h",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Candles 1D",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Candles 1Week",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        []
+      ]
+    },
+    "Generate audio": {
+      "main": [
+        [
+          {
+            "node": "Send an audio file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Current Date": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c173a545-ee84-413f-bf1d-948ad27168e8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "788588a845777cd319fa9655e4e1b96573b8e9b75b00d24b99a8c8193600abe5"
+  },
+  "id": "yXCoV058VLeUV8ADd7AAd",
+  "tags": []
+}
